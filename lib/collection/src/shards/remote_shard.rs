@@ -315,6 +315,7 @@ impl ShardOperation for RemoteShard {
             limit: Some(limit as u32),
             with_payload: Some(with_payload_interface.clone().into()),
             with_vectors: Some(with_vector.clone().into()),
+            read_consistency: None,
         };
         let request = &ScrollPointsInternal {
             scroll_points: Some(scroll_points),
@@ -433,6 +434,7 @@ impl ShardOperation for RemoteShard {
             ids: request.ids.iter().copied().map(|v| v.into()).collect(),
             with_payload: request.with_payload.clone().map(|wp| wp.into()),
             with_vectors: Some(with_vector.clone().into()),
+            read_consistency: None,
         };
         let request = &GetPointsInternal {
             get_points: Some(get_points),

@@ -5,9 +5,9 @@ use api::grpc::qdrant::payload_index_params::IndexParams;
 use api::grpc::qdrant::{
     BatchResult, ClearPayloadPoints, CountPoints, CountResponse, CreateFieldIndexCollection,
     DeleteFieldIndexCollection, DeletePayloadPoints, DeletePoints, FieldType, GetPoints,
-    GetResponse, PayloadIndexParams, PointsOperationResponse, RecommendBatchResponse,
-    RecommendPoints, RecommendResponse, ScrollPoints, ScrollResponse, SearchBatchResponse,
-    SearchPoints, SearchResponse, SetPayloadPoints, SyncPoints, UpsertPoints,
+    GetResponse, PayloadIndexParams, PointsOperationResponse, ReadConsistency,
+    RecommendBatchResponse, RecommendPoints, RecommendResponse, ScrollPoints, ScrollResponse,
+    SearchBatchResponse, SearchPoints, SearchResponse, SetPayloadPoints, SyncPoints, UpsertPoints,
 };
 use collection::operations::conversions::write_ordering_from_proto;
 use collection::operations::payload_ops::DeletePayload;
@@ -441,6 +441,7 @@ pub async fn search(
         score_threshold,
         vector_name,
         with_vectors,
+        read_consistency,
     } = search_points;
 
     let search_request = SearchRequest {
@@ -459,6 +460,7 @@ pub async fn search(
                 .unwrap_or_default(),
         ),
         score_threshold,
+        read_consistency: read_consistency.try_into()?,
     };
 
     let timing = Instant::now();
@@ -481,12 +483,18 @@ pub async fn search_batch(
     toc: &TableOfContent,
     collection_name: String,
     search_points: Vec<SearchPoints>,
+    read_consistency: Option<ReadConsistency>,
     shard_selection: Option<ShardId>,
 ) -> Result<Response<SearchBatchResponse>, Status> {
     let searches: Result<Vec<_>, Status> = search_points
         .into_iter()
+        .map(|mut req| {
+            req.read_consistency = req.read_consistency.or(read_consistency.clone());
+            req
+        })
         .map(|search_point| search_point.try_into())
         .collect();
+
     let search_requests = SearchRequestBatch {
         searches: searches?,
     };
@@ -527,6 +535,7 @@ pub async fn recommend(
         using,
         with_vectors,
         lookup_from,
+        read_consistency,
     } = recommend_points;
 
     let request = collection::operations::types::RecommendRequest {
@@ -551,6 +560,7 @@ pub async fn recommend(
         score_threshold,
         using: using.map(|u| u.into()),
         lookup_from: lookup_from.map(|l| l.into()),
+        read_consistency: read_consistency.try_into()?,
     };
 
     let timing = Instant::now();
@@ -574,9 +584,14 @@ pub async fn recommend_batch(
     toc: &TableOfContent,
     collection_name: String,
     recommend_points: Vec<RecommendPoints>,
+    read_consistency: Option<ReadConsistency>,
 ) -> Result<Response<RecommendBatchResponse>, Status> {
     let searches: Result<Vec<_>, Status> = recommend_points
         .into_iter()
+        .map(|mut req| {
+            req.read_consistency = req.read_consistency.or(read_consistency.clone());
+            req
+        })
         .map(|recommend_point| recommend_point.try_into())
         .collect();
     let recommend_batch = RecommendRequestBatch {
@@ -614,6 +629,7 @@ pub async fn scroll(
         limit,
         with_payload,
         with_vectors,
+        read_consistency,
     } = scroll_points;
 
     let scroll_request = ScrollRequest {
@@ -624,6 +640,7 @@ pub async fn scroll(
         with_vector: with_vectors
             .map(|selector| selector.into())
             .unwrap_or_default(),
+        read_consistency: read_consistency.try_into()?,
     };
 
     let timing = Instant::now();
@@ -683,6 +700,7 @@ pub async fn get(
         ids,
         with_payload,
         with_vectors,
+        read_consistency,
     } = get_points;
 
     let point_request = PointRequest {
@@ -694,6 +712,7 @@ pub async fn get(
         with_vector: with_vectors
             .map(|selector| selector.into())
             .unwrap_or_default(),
+        read_consistency: read_consistency.try_into()?,
     };
 
     let timing = Instant::now();

@@ -2,6 +2,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use collection::collection::Collection;
+use collection::operations::consistency_params::ReadConsistency;
 use collection::operations::point_ops::{PointInsertOperations, PointOperations, PointStruct};
 use collection::operations::types::{CollectionError, CollectionResult, ScrollRequest};
 use collection::operations::{CollectionUpdateOperations, CreateIndex, FieldIndexOperations};
@@ -82,6 +83,7 @@ async fn replicate_shard_data(
             filter: None,
             with_payload: Some(WithPayloadInterface::Bool(true)),
             with_vector: WithVector::Bool(true),
+            read_consistency: ReadConsistency::Factor(1),
         };
 
         let collections_read = collections.read().await;
