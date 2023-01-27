@@ -97,6 +97,7 @@ async fn test_collection_payload_reloading_with_shards(shard_number: u32) {
                 with_vector: true.into(),
             },
             None,
+            None,
         )
         .await
         .unwrap();
@@ -167,6 +168,7 @@ async fn test_collection_payload_custom_payload_with_shards(shard_number: u32) {
                 with_vector: true.into(),
             },
             None,
+            None,
         )
         .await
         .unwrap();
@@ -197,6 +199,7 @@ async fn test_collection_payload_custom_payload_with_shards(shard_number: u32) {
                 with_payload: Some(PayloadSelectorExclude::new(vec!["k1".to_string()]).into()),
                 with_vector: false.into(),
             },
+            None,
             None,
         )
         .await

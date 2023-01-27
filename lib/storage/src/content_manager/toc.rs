@@ -12,6 +12,7 @@ use collection::config::{
     CollectionParams,
 };
 use collection::operations::config_diff::DiffConfig;
+use collection::operations::consistency_params::ReadConsistency;
 use collection::operations::snapshot_ops::SnapshotDescription;
 use collection::operations::types::{
     AliasDescription, CollectionResult, CountRequest, CountResult, PointRequest, RecommendRequest,
@@ -946,11 +947,17 @@ impl TableOfContent {
         &self,
         collection_name: &str,
         request: RecommendRequest,
+        read_consistency: Option<ReadConsistency>,
     ) -> Result<Vec<ScoredPoint>, StorageError> {
         let collection = self.get_collection(collection_name).await?;
-        recommend_by(request, &collection, |name| self.get_collection_opt(name))
-            .await
-            .map_err(|err| err.into())
+        recommend_by(
+            request,
+            &collection,
+            |name| self.get_collection_opt(name),
+            read_consistency,
+        )
+        .await
+        .map_err(|err| err.into())
     }
 
     /// Recommend points in a batchig fashion using positive and negative example from the request
@@ -967,11 +974,17 @@ impl TableOfContent {
         &self,
         collection_name: &str,
         request: RecommendRequestBatch,
+        read_consistency: Option<ReadConsistency>,
     ) -> Result<Vec<Vec<ScoredPoint>>, StorageError> {
         let collection = self.get_collection(collection_name).await?;
-        recommend_batch_by(request, &collection, |name| self.get_collection_opt(name))
-            .await
-            .map_err(|err| err.into())
+        recommend_batch_by(
+            request,
+            &collection,
+            |name| self.get_collection_opt(name),
+            read_consistency,
+        )
+        .await
+        .map_err(|err| err.into())
     }
 
     /// Search for the closest points using vector similarity with given restrictions defined
@@ -989,11 +1002,12 @@ impl TableOfContent {
         &self,
         collection_name: &str,
         request: SearchRequest,
+        read_consistency: Option<ReadConsistency>,
         shard_selection: Option<ShardId>,
     ) -> Result<Vec<ScoredPoint>, StorageError> {
         let collection = self.get_collection(collection_name).await?;
         collection
-            .search(request, shard_selection)
+            .search(request, read_consistency, shard_selection)
             .await
             .map_err(|err| err.into())
     }
@@ -1013,11 +1027,12 @@ impl TableOfContent {
         &self,
         collection_name: &str,
         request: SearchRequestBatch,
+        read_consistency: Option<ReadConsistency>,
         shard_selection: Option<ShardId>,
     ) -> Result<Vec<Vec<ScoredPoint>>, StorageError> {
         let collection = self.get_collection(collection_name).await?;
         collection
-            .search_batch(request, shard_selection)
+            .search_batch(request, read_consistency, shard_selection)
             .await
             .map_err(|err| err.into())
     }
@@ -1062,11 +1077,12 @@ impl TableOfContent {
         &self,
         collection_name: &str,
         request: PointRequest,
+        read_consistency: Option<ReadConsistency>,
         shard_selection: Option<ShardId>,
     ) -> Result<Vec<Record>, StorageError> {
         let collection = self.get_collection(collection_name).await?;
         collection
-            .retrieve(request, shard_selection)
+            .retrieve(request, read_consistency, shard_selection)
             .await
             .map_err(|err| err.into())
     }
@@ -1129,11 +1145,12 @@ impl TableOfContent {
         &self,
         collection_name: &str,
         request: ScrollRequest,
+        read_consistency: Option<ReadConsistency>,
         shard_selection: Option<ShardId>,
     ) -> Result<ScrollResult, StorageError> {
         let collection = self.get_collection(collection_name).await?;
         collection
-            .scroll_by(request, shard_selection)
+            .scroll_by(request, read_consistency, shard_selection)
             .await
             .map_err(|err| err.into())
     }
